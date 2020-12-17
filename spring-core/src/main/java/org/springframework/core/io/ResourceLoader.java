@@ -63,6 +63,13 @@ public interface ResourceLoader {
 	 * @see #CLASSPATH_URL_PREFIX
 	 * @see Resource#exists()
 	 * @see Resource#getInputStream()
+	 *
+	 * 根据所提供资源的路径 location 返回 Resource 实例，但是它不确保该 Resource 一定存在，需要调用 Resource#exist() 方法来判断。
+	 * 该方法支持以下模式的资源加载：
+	 * URL位置资源，如 "file:C:/test.dat" 。
+	 * ClassPath位置资源，如 "classpath:test.dat 。
+	 * 相对路径资源，如 "WEB-INF/test.dat" ，此时返回的Resource 实例，根据实现不同而不同。
+	 * 该方法的主要实现是在其子类 DefaultResourceLoader 中实现，具体过程我们在分析 DefaultResourceLoader 时做详细说明。
 	 */
 	Resource getResource(String location);
 
@@ -75,6 +82,8 @@ public interface ResourceLoader {
 	 * (only {@code null} if even the system ClassLoader isn't accessible)
 	 * @see org.springframework.util.ClassUtils#getDefaultClassLoader()
 	 * @see org.springframework.util.ClassUtils#forName(String, ClassLoader)
+	 *
+	 * 返回 ClassLoader 实例，对于想要获取 ResourceLoader 使用的 ClassLoader 用户来说，可以直接调用该方法来获取
 	 */
 	@Nullable
 	ClassLoader getClassLoader();
