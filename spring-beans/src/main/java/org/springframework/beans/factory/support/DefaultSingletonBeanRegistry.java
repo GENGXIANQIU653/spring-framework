@@ -72,27 +72,35 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 
 	/** Cache of singleton objects: bean name to bean instance. */
 	/**
-	 * 存放的是单例 bean 的映射。
-	 *
+	 * 一级缓存
+	 * 单例对象的 Cache
+	 * 存放的是单例 bean 的映射
+	 * 注意，这里的 bean 是已经创建完成的
 	 * 对应关系为 bean name --> bean instance
 	 */
 	private final Map<String, Object> singletonObjects = new ConcurrentHashMap<>(256);
 
 	/** Cache of singleton factories: bean name to ObjectFactory. */
 	/**
-	 * 存放的是 ObjectFactory，可以理解为创建单例 bean 的 factory 。
-	 *
+	 * 三级缓存
+	 * 单例对象工厂的 Cache
+	 * 存放的是 ObjectFactory，可以理解为创建早期半成品（未初始化完）的 bean 的 factory ，
+	 * 最终添加到二级缓存 {@link #earlySingletonObjects} 中
 	 * 对应关系是 bean name --> ObjectFactory
+	 *
+	 * 这个 Map 也是【循环依赖】的关键所在。
 	 **/
 	private final Map<String, ObjectFactory<?>> singletonFactories = new HashMap<>(16);
 
 	/** Cache of early singleton objects: bean name to bean instance. */
 	/**
-	 * 存放的是早期的 bean，对应关系也是 bean name --> bean instance。
-	 *
+	 * 二级缓存
+	 * 提前曝光的单例对象的 Cache
+	 * 存放的是早期半成品（未初始化完）的 bean，对应关系也是 bean name --> bean instance
 	 * 它与 {@link #singletonFactories} 区别在于 earlySingletonObjects 中存放的 bean 不一定是完整。
 	 * 从 {@link #getSingleton(String)} 方法中，我们可以了解，bean 在创建过程中就已经加入到 earlySingletonObjects 中了。
-	 * 所以当在 bean 的创建过程中，就可以通过 getBean() 方法获取。
+	 * 所以当在 bean 的创建过程中，就可以通过 getBean() 方法获取
+	 *
 	 * 这个 Map 也是【循环依赖】的关键所在。
 	 */
 	private final Map<String, Object> earlySingletonObjects = new HashMap<>(16);
@@ -148,6 +156,10 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * <p>To be called for eager registration of singletons.
 	 * @param beanName the name of the bean
 	 * @param singletonObject the singleton object
+	 *
+	 * 一级缓存
+	 * 添加至一级缓存，同时从二级、三级缓存中删除
+	 *
 	 */
 	protected void addSingleton(String beanName, Object singletonObject) {
 		synchronized (this.singletonObjects) {
@@ -170,6 +182,10 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		Assert.notNull(singletonFactory, "Singleton factory must not be null");
 		synchronized (this.singletonObjects) {
 			if (!this.singletonObjects.containsKey(beanName)) {
+				// singletonFactories 这个三级缓存才是解决 Spring Bean 循环依赖的诀窍所在
+				// 同时这段代码发生在 #createBeanInstance(...) 方法之后，也就是说这个 bean 其实已经被创建出来了，
+				// 但是它还不是很完美（没有进行属性填充和初始化），但是对于其他依赖它的对象而言已经足够了（可以根据对象引用定位到堆中对象），
+				// 能够被认出来了。所以 Spring 在这个时候，选择将该对象提前曝光出来让大家认识认识
 				this.singletonFactories.put(beanName, singletonFactory);
 				this.earlySingletonObjects.remove(beanName);
 				this.registeredSingletons.add(beanName);
@@ -192,7 +208,11 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * @return the registered singleton object, or {@code null} if none found
 	 *
 	 * 根据 beanName 依次检测这三个 Map，若为空，从下一个，否则返回。这三个 Map 存放的都有各自的功能
-	 *
+	 * 该方法流程如下
+	 * 首先，从一级缓存 singletonObjects 获取。
+	 * 如果，没有且当前指定的 beanName 正在创建，就再从二级缓存 earlySingletonObjects 中获取。
+	 * 如果，还是没有获取到且允许 singletonFactories 通过 #getObject() 获取，则从三级缓存 singletonFactories 获取。
+	 * 如果获取到，则通过其 #getObject() 方法，获取对象，并将其加入到二级缓存 earlySingletonObjects 中，并从三级缓存 singletonFactories 删除
 	 */
 	@Nullable
 	protected Object getSingleton(String beanName, boolean allowEarlyReference) {
@@ -205,6 +225,9 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 				// 从 earlySingletonObjects 获取
 				singletonObject = this.earlySingletonObjects.get(beanName);
 				// earlySingletonObjects 中没有，且允许提前创建
+				// allowEarlyReference 变量：从字面意思上面理解就是允许提前拿到引用。
+				// 其实真正的意思是，是否允许从 singletonFactories 缓存中通过 #getObject() 方法，拿到对象。
+				// 为什么会有这样一个字段呢？原因就在于 singletonFactories 才是 Spring 解决 singleton bean 的诀窍所在
 				if (singletonObject == null && allowEarlyReference) {
 					// 从 singletonFactories 中获取对应的 ObjectFactory
 					ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName);
@@ -212,6 +235,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 						// 获得 bean
 						singletonObject = singletonFactory.getObject();
 						// 添加 bean 到 earlySingletonObjects 中
+						// 二级缓存存在的意义，就是缓存三级缓存中的 ObjectFactory 的 #getObject() 方法的执行结果，提早曝光的单例 Bean 对象
 						this.earlySingletonObjects.put(beanName, singletonObject);
 						// 从 singletonFactories 中移除对应的 ObjectFactory
 						this.singletonFactories.remove(beanName);
@@ -365,6 +389,9 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * @param beanName the name of the bean
 	 *
 	 * Bean 创建过程中都会将其加入到 singletonsCurrentlyInCreation 集合中
+	 * 判断当前 singleton bean 是否处于创建中。
+	 * bean 处于创建中，也就是说 bean 在初始化但是没有完成初始化，有一个这样的过程其实和 Spring 解决 bean 循环依赖的理念相辅相成。
+	 * 因为 Spring 解决 singleton bean 的核心就在于提前曝光 bean
 	 */
 	public boolean isSingletonCurrentlyInCreation(String beanName) {
 		return this.singletonsCurrentlyInCreation.contains(beanName);

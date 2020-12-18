@@ -991,6 +991,13 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * @param mbd the merged bean definition for the bean
 	 * @param bean the raw bean instance
 	 * @return the object to expose as bean reference
+	 * ===================================================================================================================================
+	 * #getEarlyBeanReference(String beanName, RootBeanDefinition mbd, Object bean) 方法也非常重要，这里会创建早期初始化 Bean 可能存在的 AOP 代理
+	 * ===================================================================================================================================
+	 *
+	 * 对创建的早期半成品（未初始化）的 Bean 处理引用
+	 * 例如说，AOP 就是在这里动态织入，创建其代理 Bean 返回
+	 *
 	 */
 	protected Object getEarlyBeanReference(String beanName, RootBeanDefinition mbd, Object bean) {
 		Object exposedObject = bean;
