@@ -207,7 +207,10 @@ public class PropertyPlaceholderConfigurer extends PlaceholderConfigurerSupport 
 	protected void processProperties(ConfigurableListableBeanFactory beanFactoryToProcess, Properties props)
 			throws BeansException {
 
+		// <1> 创建 StringValueResolver 对象
 		StringValueResolver valueResolver = new PlaceholderResolvingStringValueResolver(props);
+		// <2> 处理
+		// 该方法在父类 PlaceholderConfigurerSupport 中实现
 		doProcessProperties(beanFactoryToProcess, valueResolver);
 	}
 
@@ -218,6 +221,10 @@ public class PropertyPlaceholderConfigurer extends PlaceholderConfigurerSupport 
 
 		private final PlaceholderResolver resolver;
 
+		// 在构造 String 值解析器 StringValueResolver 时，将已经解析的 Properties 实例对象封装在 PlaceholderResolver 实例 resolver 中。
+		// PlaceholderResolver 是一个用于解析字符串中包含占位符的替换值的策略接口，
+		// 该接口有一个 #resolvePlaceholder(String strVa) 方法，用于返回占位符的替换值。
+		// 还有一个 PropertyPlaceholderHelper 工具 helper ，从名字上面看应该是进行替换的工具类
 		public PlaceholderResolvingStringValueResolver(Properties props) {
 			this.helper = new PropertyPlaceholderHelper(
 					placeholderPrefix, placeholderSuffix, valueSeparator, ignoreUnresolvablePlaceholders);
@@ -227,10 +234,16 @@ public class PropertyPlaceholderConfigurer extends PlaceholderConfigurerSupport 
 		@Override
 		@Nullable
 		public String resolveStringValue(String strVal) throws BeansException {
+			// 解析真值
+			// helper 为 PropertyPlaceholderHelper 实例对象，而 PropertyPlaceholderHelper 则是处理应用程序中包含占位符的字符串工具类。
+			// 在构造 helper 实例对象时需要传入了几个参数：placeholderPrefix、placeholderSuffix、valueSeparator
+
+			// 调用 PropertyPlaceholderHelper 的 #replacePlaceholders(String value, PlaceholderResolver placeholderResolver) 方法，进行占位符替换
 			String resolved = this.helper.replacePlaceholders(strVal, this.resolver);
 			if (trimValues) {
 				resolved = resolved.trim();
 			}
+			// 返回真值
 			return (resolved.equals(nullValue) ? null : resolved);
 		}
 	}
