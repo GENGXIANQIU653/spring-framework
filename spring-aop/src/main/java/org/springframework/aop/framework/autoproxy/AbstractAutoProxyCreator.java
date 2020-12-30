@@ -290,12 +290,15 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 * Create a proxy with the configured interceptors if the bean is
 	 * identified as one to proxy by the subclass.
 	 * @see #getAdvicesAndAdvisorsForBean
+	 *
+	 * bean 初始化后置处理方法
 	 */
 	@Override
 	public Object postProcessAfterInitialization(@Nullable Object bean, String beanName) {
 		if (bean != null) {
 			Object cacheKey = getCacheKey(bean.getClass(), beanName);
 			if (this.earlyProxyReferences.remove(cacheKey) != bean) {
+				// 如果需要，为 bean 生成代理对象
 				return wrapIfNecessary(bean, beanName, cacheKey);
 			}
 		}
@@ -338,22 +341,38 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		if (Boolean.FALSE.equals(this.advisedBeans.get(cacheKey))) {
 			return bean;
 		}
+		/*
+		 * <1> 如果是基础设施类（Pointcut、Advice、Advisor 等接口的实现类），或是应该跳过的类，
+		 * 则不应该生成代理，此时直接返回 bean
+		 */
 		if (isInfrastructureClass(bean.getClass()) || shouldSkip(bean.getClass(), beanName)) {
+			// 将 <cacheKey, FALSE> 键值对放入缓存中，供上面的 if 分支使用
 			this.advisedBeans.put(cacheKey, Boolean.FALSE);
 			return bean;
 		}
 
 		// Create proxy if we have advice.
+		// <2> 为目标 bean 查找合适的通知器
+		// =========================================
+		// 核心方法
+		// =========================================
 		Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
+		// <3> 为 bean 生成代理对象，否则直接返回 bean
 		if (specificInterceptors != DO_NOT_PROXY) {
 			this.advisedBeans.put(cacheKey, Boolean.TRUE);
+			// 创建代理
 			Object proxy = createProxy(
 					bean.getClass(), beanName, specificInterceptors, new SingletonTargetSource(bean));
 			this.proxyTypes.put(cacheKey, proxy.getClass());
+			/*
+			 * 返回代理对象，此时 IOC 容器输入 bean，得到 proxy。此时，
+			 * beanName 对应的 bean 是代理对象，而非原始的 bean
+			 */
 			return proxy;
 		}
 
 		this.advisedBeans.put(cacheKey, Boolean.FALSE);
+		// <4> specificInterceptors = null，直接返回 bean
 		return bean;
 	}
 

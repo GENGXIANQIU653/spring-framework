@@ -103,6 +103,7 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 				new CompositeComponentDefinition(element.getTagName(), parserContext.extractSource(element));
 		parserContext.pushContainingComponent(compositeDef);
 
+		// ====================
 		configureAutoProxyCreator(parserContext, element);
 
 		List<Element> childElts = DomUtils.getChildElements(element);
@@ -115,6 +116,7 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 				parseAdvisor(elt, parserContext);
 			}
 			else if (ASPECT.equals(localName)) {
+				// 对应<aop:aspect>标签
 				parseAspect(elt, parserContext);
 			}
 		}
