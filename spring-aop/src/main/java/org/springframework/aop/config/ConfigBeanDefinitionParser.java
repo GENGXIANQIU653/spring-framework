@@ -98,12 +98,17 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 
 	@Override
 	@Nullable
+	// 解析基于xml 配置的aop
 	public BeanDefinition parse(Element element, ParserContext parserContext) {
 		CompositeComponentDefinition compositeDef =
 				new CompositeComponentDefinition(element.getTagName(), parserContext.extractSource(element));
 		parserContext.pushContainingComponent(compositeDef);
 
-		// ====================
+		// ====================作用如下===================
+		// 1、向Spring容器注册了一个BeanName为org.springframework.aop.config.internalAutoProxyCreator的Bean定义，可以自定义也可以使用Spring提供的（根据优先级来）
+		// 2、Spring默认提供的是org.springframework.aop.aspectj.autoproxy.AspectJAwareAdvisorAutoProxyCreator，这个类是AOP的核心类
+		// 3、根据配置proxy-target-class和expose-proxy，设置是否使用CGLIB进行代理以及是否暴露最终的代理
+		// ==============================================
 		configureAutoProxyCreator(parserContext, element);
 
 		List<Element> childElts = DomUtils.getChildElements(element);
@@ -117,6 +122,10 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 			}
 			else if (ASPECT.equals(localName)) {
 				// 对应<aop:aspect>标签
+				// <aop:config>下的节点为<aop:aspect>
+				// =================
+				// 重点方法
+				// =================
 				parseAspect(elt, parserContext);
 			}
 		}

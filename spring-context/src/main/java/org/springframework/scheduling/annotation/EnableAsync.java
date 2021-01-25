@@ -35,6 +35,8 @@ import org.springframework.core.Ordered;
  * <p>To be used together with @{@link Configuration Configuration} classes as follows,
  * enabling annotation-driven async processing for an entire Spring application context:
  *
+ * 开启Spring异步方法执行，类似xml中task标签配置的功能，需联合@Configuration注解一起使用
+ *
  * <pre class="code">
  * &#064;Configuration
  * &#064;EnableAsync
@@ -58,6 +60,8 @@ import org.springframework.core.Ordered;
  *     }
  * }</pre>
  *
+ * 默认情况下spring会先 搜索TaskExecutor类型的bean 或者 名字为taskExecutor的Executor类型的bean
+ * 都不存在使用SimpleAsyncTaskExecutor执行器
  * <p>By default, Spring will be searching for an associated thread pool definition:
  * either a unique {@link org.springframework.core.task.TaskExecutor} bean in the context,
  * or an {@link java.util.concurrent.Executor} bean named "taskExecutor" otherwise. If
@@ -75,6 +79,7 @@ import org.springframework.core.Ordered;
  * getAsyncUncaughtExceptionHandler()}
  * method.</li>
  * </ul>
+ * 实现 AsyncConfigurer 接口，通过getAsyncExecutor()方法获取异步执行器，通过getAsyncUncaughtExceptionHandler()获取AsyncUncaughtExceptionHandler异常处理器
  *
  * <p><b>NOTE: {@link AsyncConfigurer} configuration classes get initialized early
  * in the application context bootstrap. If you need any dependencies on other beans
@@ -130,6 +135,7 @@ import org.springframework.core.Ordered;
  * &lt;/beans&gt;
  * </pre>
  *
+ * 注解类和xml基本一致，但是使用注解类还可以自定义线程名前缀（上面的AppConfig-》getAsyncExecutor-》setThreadNamePrefix）
  * The above XML-based and JavaConfig-based examples are equivalent except for the
  * setting of the <em>thread name prefix</em> of the {@code Executor}; this is because
  * the {@code <task:executor>} element does not expose such an attribute. This
@@ -140,13 +146,14 @@ import org.springframework.core.Ordered;
  * {@link AdviceMode#PROXY} (the default), then the other attributes control the behavior
  * of the proxying. Please note that proxy mode allows for interception of calls through
  * the proxy only; local calls within the same class cannot get intercepted that way.
+ * 这里就说明了@Async必须在不同方法中调用，即第一部分注意的第三点
  *
  * <p>Note that if the {@linkplain #mode} is set to {@link AdviceMode#ASPECTJ}, then the
  * value of the {@link #proxyTargetClass} attribute will be ignored. Note also that in
  * this case the {@code spring-aspects} module JAR must be present on the classpath, with
  * compile-time weaving or load-time weaving applying the aspect to the affected classes.
  * There is no proxy involved in such a scenario; local calls will be intercepted as well.
- *
+ * 当然也可以用Aspect模式织入（需要引入spring-aspects模块需要的jar）
  * @author Chris Beams
  * @author Juergen Hoeller
  * @author Stephane Nicoll
@@ -170,6 +177,7 @@ public @interface EnableAsync {
 	 * <p>This attribute exists so that developers can provide their own
 	 * custom annotation type to indicate that a method (or all methods of
 	 * a given class) should be invoked asynchronously.
+	 * 该属性用来支持用户自定义异步注解，默认扫描spring的@Async和EJB3.1的@code @javax.ejb.Asynchronous
 	 */
 	Class<? extends Annotation> annotation() default Annotation.class;
 
@@ -184,6 +192,7 @@ public @interface EnableAsync {
 	 * will be upgraded to subclass proxying at the same time. This approach has no
 	 * negative impact in practice unless one is explicitly expecting one type of proxy
 	 * vs. another &mdash; for example, in tests.
+	 * 标明是否需要创建CGLIB子类代理，AdviceMode=PROXY时才适用。注意设置为true时，其它spring管理的bean也会升级到CGLIB子类代理
 	 */
 	boolean proxyTargetClass() default false;
 
@@ -196,6 +205,7 @@ public @interface EnableAsync {
 	 * since Spring's interceptor does not even kick in for such a runtime scenario.
 	 * For a more advanced mode of interception, consider switching this to
 	 * {@link AdviceMode#ASPECTJ}.
+	 * 标明异步通知将会如何实现，默认PROXY，如需支持同一个类中非异步方法调用另一个异步方法，需要设置为ASPECTJ
 	 */
 	AdviceMode mode() default AdviceMode.PROXY;
 
@@ -205,6 +215,7 @@ public @interface EnableAsync {
 	 * <p>The default is {@link Ordered#LOWEST_PRECEDENCE} in order to run
 	 * after all other post-processors, so that it can add an advisor to
 	 * existing proxies rather than double-proxy.
+	 * 标明异步注解bean处理器应该遵循的执行顺序，默认最低的优先级（Integer.MAX_VALUE，值越小优先级越高)
 	 */
 	int order() default Ordered.LOWEST_PRECEDENCE;
 

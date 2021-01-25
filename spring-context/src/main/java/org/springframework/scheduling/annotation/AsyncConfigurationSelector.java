@@ -21,6 +21,7 @@ import org.springframework.context.annotation.AdviceModeImportSelector;
 import org.springframework.lang.Nullable;
 
 /**
+ * 查询器：基于@EanableAsync中定义的模式AdviceMode加在@Configuration标记的类上，确定抽象异步配置类的实现类
  * Selects which implementation of {@link AbstractAsyncConfiguration} should
  * be used based on the value of {@link EnableAsync#mode} on the importing
  * {@code @Configuration} class.
@@ -30,6 +31,9 @@ import org.springframework.lang.Nullable;
  * @since 3.1
  * @see EnableAsync
  * @see ProxyAsyncConfiguration
+ *
+ * ImportSelector接口的selectImports()方法
+ *
  */
 public class AsyncConfigurationSelector extends AdviceModeImportSelector<EnableAsync> {
 
@@ -46,8 +50,10 @@ public class AsyncConfigurationSelector extends AdviceModeImportSelector<EnableA
 	@Nullable
 	public String[] selectImports(AdviceMode adviceMode) {
 		switch (adviceMode) {
+			// 如果配置的PROXY，使用ProxyAsyncConfiguration
 			case PROXY:
 				return new String[] {ProxyAsyncConfiguration.class.getName()};
+			// 如果配置的ASPECTJ，使用AspectJAsyncConfiguration
 			case ASPECTJ:
 				return new String[] {ASYNC_EXECUTION_ASPECT_CONFIGURATION_CLASS_NAME};
 			default:

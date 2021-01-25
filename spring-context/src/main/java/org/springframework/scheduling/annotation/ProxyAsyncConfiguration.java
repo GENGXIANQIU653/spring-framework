@@ -36,6 +36,9 @@ import org.springframework.util.Assert;
  * @since 3.1
  * @see EnableAsync
  * @see AsyncConfigurationSelector
+ *
+ * 1.就是继承了AbstractAsyncConfiguration类
+ * 2.定义了一个bean:AsyncAnnotationBeanPostProcessor
  */
 @Configuration
 @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
@@ -43,15 +46,20 @@ public class ProxyAsyncConfiguration extends AbstractAsyncConfiguration {
 
 	@Bean(name = TaskManagementConfigUtils.ASYNC_ANNOTATION_PROCESSOR_BEAN_NAME)
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
-	public AsyncAnnotationBeanPostProcessor asyncAdvisor() {
+	public AsyncAnnotationBeanPostProcessor asyncAdvisor() { // <2>定义了一个bean:AsyncAnnotationBeanPostProcessor
 		Assert.notNull(this.enableAsync, "@EnableAsync annotation metadata was not injected");
+		// <2.1> 新建一个异步注解bean后处理器
 		AsyncAnnotationBeanPostProcessor bpp = new AsyncAnnotationBeanPostProcessor();
+		// <2.2> Executor：设置线程任务执行器 && AsyncUncaughtExceptionHandler:设置异常处理器
 		bpp.configure(this.executor, this.exceptionHandler);
 		Class<? extends Annotation> customAsyncAnnotation = this.enableAsync.getClass("annotation");
+		// <2.3> 如果@EnableAsync中用户自定义了annotation属性，即异步注解类型，那么设置
 		if (customAsyncAnnotation != AnnotationUtils.getDefaultValue(EnableAsync.class, "annotation")) {
 			bpp.setAsyncAnnotationType(customAsyncAnnotation);
 		}
+		// <2.4> 设置是否升级到CGLIB子类代理，默认不开启
 		bpp.setProxyTargetClass(this.enableAsync.getBoolean("proxyTargetClass"));
+		// <2.5> 设置执行优先级，默认最后执行
 		bpp.setOrder(this.enableAsync.<Integer>getNumber("order"));
 		return bpp;
 	}

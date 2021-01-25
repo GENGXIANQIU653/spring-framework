@@ -29,6 +29,9 @@ import java.lang.annotation.Target;
  * on methods declared within a
  * {@link org.springframework.context.annotation.Configuration @Configuration} class.
  *
+ * 标记一个异步执行的方法
+ * 标记一个类，类中的所有方法都异步执行
+ *
  * <p>In terms of target method signatures, any parameter types are supported.
  * However, the return type is constrained to either {@code void} or
  * {@link java.util.concurrent.Future}. In the latter case, you may declare the
@@ -37,12 +40,16 @@ import java.lang.annotation.Target;
  * interaction with the asynchronous task and for immediate composition with
  * further processing steps.
  *
+ * 返回值只能是void 或Future 类型(ListenableFuture、CompletableFuture)
+ *
  * <p>A {@code Future} handle returned from the proxy will be an actual asynchronous
  * {@code Future} that can be used to track the result of the asynchronous method
  * execution. However, since the target method needs to implement the same signature,
  * it will have to return a temporary {@code Future} handle that just passes a value
  * through: e.g. Spring's {@link AsyncResult}, EJB 3.1's {@link javax.ejb.AsyncResult},
  * or {@link java.util.concurrent.CompletableFuture#completedFuture(Object)}.
+ *
+ * Future 是代理返回的实际的异步返回，用来追踪异步方法的返回值
  *
  * @author Juergen Hoeller
  * @author Chris Beams
@@ -62,6 +69,9 @@ public @interface Async {
 	 * name) of a specific {@link java.util.concurrent.Executor Executor} or
 	 * {@link org.springframework.core.task.TaskExecutor TaskExecutor}
 	 * bean definition.
+	 *
+	 * 用以限定执行方法的执行器名称（自定义）：Executor或者TaskExecutor
+	 *
 	 * <p>When specified on a class-level {@code @Async} annotation, indicates that the
 	 * given executor should be used for all methods within the class. Method-level use
 	 * of {@code Async#value} always overrides any value set at the class level.

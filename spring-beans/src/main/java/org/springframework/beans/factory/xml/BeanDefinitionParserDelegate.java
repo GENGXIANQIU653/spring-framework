@@ -1468,10 +1468,22 @@ public class BeanDefinitionParserDelegate {
 	 */
 	@Nullable
 	public BeanDefinition parseCustomElement(Element ele, @Nullable BeanDefinition containingBd) {
+		// <1> 从<aop:config>这个Node（参数Element是Node接口的子接口）中拿到Namespace="http://www.springframework.org/schema/aop"
 		String namespaceUri = getNamespaceURI(ele);
 		if (namespaceUri == null) {
 			return null;
 		}
+		// <2> 然后根据这个Namespace获取对应的NamespaceHandler即Namespace处理器
+		// 具体到aop这个Namespace的NamespaceHandler是
+		// org.springframework.aop.config.AopNamespaceHandler类
+		/**
+		 * 具体到AopNamespaceHandler里面，有几个Parser，是用于具体标签转换的，分别为：
+		 *
+		 * config-->ConfigBeanDefinitionParser
+		 * aspectj-autoproxy-->AspectJAutoProxyBeanDefinitionParser
+		 * scoped-proxy-->ScopedProxyBeanDefinitionDecorator
+		 * spring-configured-->SpringConfiguredBeanDefinitionParser
+		 */
 		NamespaceHandler handler = this.readerContext.getNamespaceHandlerResolver().resolve(namespaceUri);
 		if (handler == null) {
 			error("Unable to locate Spring NamespaceHandler for XML schema namespace [" + namespaceUri + "]", ele);
