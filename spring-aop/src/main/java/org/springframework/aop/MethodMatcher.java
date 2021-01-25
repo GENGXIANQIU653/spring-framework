@@ -61,6 +61,9 @@ public interface MethodMatcher {
 	 * @param method the candidate method
 	 * @param targetClass the target class
 	 * @return whether or not this method matches statically
+	 *
+	 * 对连接点进行选择
+	 *
 	 */
 	boolean matches(Method method, Class<?> targetClass);
 

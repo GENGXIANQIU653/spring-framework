@@ -32,6 +32,8 @@ import org.aopalliance.aop.Advice;
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
+ *
+ * 通知器
  */
 public interface Advisor {
 
@@ -51,6 +53,8 @@ public interface Advisor {
 	 * @see BeforeAdvice
 	 * @see ThrowsAdvice
 	 * @see AfterReturningAdvice
+	 *
+	 * 返回通知
 	 */
 	Advice getAdvice();
 

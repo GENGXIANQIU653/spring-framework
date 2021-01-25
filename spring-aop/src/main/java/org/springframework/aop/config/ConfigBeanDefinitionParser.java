@@ -206,6 +206,11 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 		return advisorDefinition;
 	}
 
+	/**
+	 * 解析 <aop:config>下的节点为<aop:aspect>
+	 * @param aspectElement
+	 * @param parserContext
+	 */
 	private void parseAspect(Element aspectElement, ParserContext parserContext) {
 		String aspectId = aspectElement.getAttribute(ID);
 		String aspectName = aspectElement.getAttribute(REF);
@@ -225,8 +230,10 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 			// ordering semantics right.
 			NodeList nodeList = aspectElement.getChildNodes();
 			boolean adviceFoundAlready = false;
+			// 循环
 			for (int i = 0; i < nodeList.getLength(); i++) {
 				Node node = nodeList.item(i);
+				// <1> 只用来处理<aop:aspect>标签下的<aop:before>、<aop:after>、<aop:after-returning>、<aop:after-throwing method="">、<aop:around method="">这五个标签
 				if (isAdviceNode(node, parserContext)) {
 					if (!adviceFoundAlready) {
 						adviceFoundAlready = true;

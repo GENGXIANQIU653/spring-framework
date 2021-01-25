@@ -31,6 +31,8 @@ import org.springframework.util.Assert;
  * @author Adrian Colyer
  * @author Juergen Hoeller
  * @since 2.0
+ *
+ * PointcutAdvisor 的实现类
  */
 public class AspectJPointcutAdvisor implements PointcutAdvisor, Ordered {
 

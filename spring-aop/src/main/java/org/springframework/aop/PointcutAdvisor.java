@@ -22,11 +22,18 @@ package org.springframework.aop;
  * for which method-level matching doesn't apply.
  *
  * @author Rod Johnson
+ *
+ * 切点通知器
  */
 public interface PointcutAdvisor extends Advisor {
 
 	/**
 	 * Get the Pointcut that drives this advisor.
+	 *
+	 * 返回切点对象
+	 *
+	 * 因此 PointcutAdvisor 的实现类即可以返回切点，也可以返回通知(Advisor 返回通知)，
+	 * 所以说 PointcutAdvisor 和切面的功能相似
 	 */
 	Pointcut getPointcut();
 
