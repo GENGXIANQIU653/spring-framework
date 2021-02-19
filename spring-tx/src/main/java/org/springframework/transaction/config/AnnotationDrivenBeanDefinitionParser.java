@@ -72,7 +72,9 @@ class AnnotationDrivenBeanDefinitionParser implements BeanDefinitionParser {
 		}
 		else {
 			// mode="proxy"
+			// ===============================
 			// <2> 提供对aop方式进行事务切入的支持
+			// ===============================
 			AopAutoProxyConfigurer.configureAutoProxyCreator(element, parserContext);
 		}
 		return null;
@@ -129,7 +131,12 @@ class AnnotationDrivenBeanDefinitionParser implements BeanDefinitionParser {
 		 * @param parserContext
 		 */
 		public static void configureAutoProxyCreator(Element element, ParserContext parserContext) {
-			// <2.1>
+			// =====================================================================================
+			// <2.1> 注册InfrastructureAdvisorAutoProxyCreator
+			// 该类间接实现了BeanPostProcessor接口，我们知道，Spring
+			// 会保证所有bean在实例化的时候都会调用其postProcessAfterInitialization方法，
+			// 我们可以使用这个方法包装和改变bean，而真正实现这个方法是在其父类AbstractAutoProxyCreator类中
+			// =====================================================================================
 			AopNamespaceUtils.registerAutoProxyCreatorIfNecessary(parserContext, element);
 
 			// "org.springframework.transaction.config.internalTransactionAdvisor"
@@ -151,10 +158,13 @@ class AnnotationDrivenBeanDefinitionParser implements BeanDefinitionParser {
 				interceptorDef.setSource(eleSource);
 				interceptorDef.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
 
+
 				// ===================================================
 				// <2.4> 注册事务管理器
 				registerTransactionManager(element, interceptorDef);
 				// ===================================================
+
+
 				interceptorDef.getPropertyValues().add("transactionAttributeSource", new RuntimeBeanReference(sourceName));
 				String interceptorName = parserContext.getReaderContext().registerWithGeneratedName(interceptorDef);
 
